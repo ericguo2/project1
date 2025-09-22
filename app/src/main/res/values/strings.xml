@@ -1,5 +1,12 @@
 <resources>
-    <string name="app_name">GridLayout</string>
+    <string name="app_name">CSCI310 Eric Guo</string>
+    <string name="mines_left_label">Mines</string>
+    <string name="seconds_label">Sec</string>
+    <string name="mode_dig">Dig</string>
+    <string name="mode_flag">Flag</string>
+    <string name="play_again">Play Again</string>
+    <string name="result_win">You won!</string>
+    <string name="result_lose">You lost.</string>
     <string name="clock">\uD83D\uDD53</string>
     <string name="flag">\uD83D\uDEA9</string>
     <string name="mine">\uD83D\uDCA3</string>
