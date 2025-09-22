@@ -19,21 +19,26 @@ public class MainActivity extends AppCompatActivity {
     private static final int ROWS = GameEngine.ROWS;
     private static final int COLS = GameEngine.COLS;
 
+    // UI
     private GridLayout grid;
     private TextView tvMinesLeft, tvTimer, tvModeIcon, tvMode;
 
+    // Board + state
     private final ArrayList<TextView> cells = new ArrayList<>();
     private GameEngine engine;
-    private boolean digMode = true;
+    private boolean digMode = true;          // true = dig, false = flag
+    private int flagsPlaced = 0;             // can exceed MINES (counter may go negative)
 
-    // Simple stopwatch (Commit 4 will refine)
+    // Simple elapsed timer (Commit 4 can change to countdown if desired)
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long startMs = 0L;
     private boolean ticking = false;
 
-    private boolean awaitingResultTap = false; // set when game ends; next tap → results (Commit 4)
+    // End-of-game extra tap gate (Commit 4 will navigate to ResultsActivity)
+    private boolean awaitingResultTap = false;
 
-    @Override protected void onCreate(Bundle savedInstanceState) {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -51,16 +56,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void startNewGame() {
         engine = new GameEngine();
+        flagsPlaced = 0;
         awaitingResultTap = false;
 
-        tvMinesLeft.setText(getString(R.string.mines_left_label) + ": " + GameEngine.MINES);
-        tvModeIcon.setText(getString(R.string.pick));
+        // UI initial state
+        updateMinesLeft();
+        tvModeIcon.setText(getString(R.string.pick));  // ⛏
         tvMode.setText(getString(R.string.mode_dig));
+        tvTimer.setText("0");
 
         buildGrid();
         renderAll();
 
-        // start basic elapsed timer (Commit 4 can switch to countdown)
+        // Start elapsed timer
         startMs = System.currentTimeMillis();
         ticking = true;
         handler.removeCallbacks(tick);
@@ -82,21 +90,32 @@ public class MainActivity extends AppCompatActivity {
         grid.setColumnCount(COLS);
         cells.clear();
 
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) {
-            final int rr = r, cc = c;
-            TextView tv = new TextView(this);
-            tv.setGravity(Gravity.CENTER);
-            tv.setTextSize(18);
-            tv.setTextColor(Color.DKGRAY);
-            tv.setBackgroundColor(Color.LTGRAY);
-            tv.setOnClickListener(v -> onCellClick(rr, cc));
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                final int rr = r, cc = c;
 
-            GridLayout.LayoutParams lp = new GridLayout.LayoutParams(
-                    GridLayout.spec(r, 1f), GridLayout.spec(c, 1f));
-            lp.width = 0; lp.height = 0;
-            int m = dp(2); lp.setMargins(m, m, m, m);
-            grid.addView(tv, lp);
-            cells.add(tv);
+                TextView tv = new TextView(this);
+                tv.setGravity(Gravity.CENTER);
+                tv.setTextSize(18);
+                tv.setTextColor(Color.DKGRAY);
+                tv.setBackgroundColor(Color.LTGRAY);
+
+                // Primary click
+                tv.setOnClickListener(v -> onCellClick(rr, cc));
+                // Quick-flag via long press (optional convenience)
+                tv.setOnLongClickListener(v -> { toggleFlag(rr, cc); return true; });
+
+                // Make cells expand evenly
+                GridLayout.LayoutParams lp = new GridLayout.LayoutParams(
+                        GridLayout.spec(r, 1f), GridLayout.spec(c, 1f));
+                lp.width = 0;
+                lp.height = 0;
+                int m = dp(2);
+                lp.setMargins(m, m, m, m);
+
+                grid.addView(tv, lp);
+                cells.add(tv);
+            }
         }
     }
 
@@ -113,35 +132,67 @@ public class MainActivity extends AppCompatActivity {
 
     private void onCellClick(int r, int c) {
         if (awaitingResultTap) {
-            // Commit 4: navigate to results here
-            Toast.makeText(this, "Results screen coming in next commit.", Toast.LENGTH_SHORT).show();
+            // Commit 4 will navigate to a results screen here.
+            Toast.makeText(this, "Results screen coming next.", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (engine.gameOver) return; // safety
+        if (engine.gameOver) return;
 
         if (digMode) {
+            // Dig: block if flagged
             if (engine.board[r][c].isFlagged) {
                 Toast.makeText(this, "Cannot dig a flagged cell.", Toast.LENGTH_SHORT).show();
                 return;
             }
+
             boolean changed = engine.reveal(r, c);
             if (changed) renderAll();
+
             if (engine.gameOver) {
-                ticking = false; handler.removeCallbacks(tick);
+                ticking = false;
+                handler.removeCallbacks(tick);
                 engine.revealAll();
                 renderAll();
-                awaitingResultTap = true; // extra tap rule (Commit 4 will navigate)
-                Toast.makeText(this, (engine.won ? "You won!" : "You hit a mine!") +
-                        " Tap once more to see results.", Toast.LENGTH_SHORT).show();
+                awaitingResultTap = true; // require one extra tap before results
+                Toast.makeText(this,
+                        (engine.won ? "You won!" : "You hit a mine!") + " Tap once more to continue.",
+                        Toast.LENGTH_SHORT).show();
             }
         } else {
-            // Commit 3 will implement flagging here
-            Toast.makeText(this, "Flagging arrives in next commit.", Toast.LENGTH_SHORT).show();
+            // Flag mode uses bottom toggle
+            toggleFlag(r, c);
         }
     }
 
+    private void toggleFlag(int r, int c) {
+        if (engine.gameOver || awaitingResultTap) return;
+
+        Cell cell = engine.board[r][c];
+        if (cell.isRevealed) {
+            Toast.makeText(this, "Cannot flag a revealed cell.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean changed = engine.toggleFlag(r, c);
+        if (changed) {
+            flagsPlaced += cell.isFlagged ? 1 : -1;
+            updateMinesLeft();
+            renderCell(r, c);
+        }
+    }
+
+    private void updateMinesLeft() {
+        // Counter can be negative per requirement
+        int remaining = GameEngine.MINES - flagsPlaced;
+        tvMinesLeft.setText(getString(R.string.mines_left_label) + ": " + remaining);
+    }
+
     private void renderAll() {
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) renderCell(r, c);
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                renderCell(r, c);
+            }
+        }
     }
 
     private void renderCell(int r, int c) {
@@ -151,11 +202,12 @@ public class MainActivity extends AppCompatActivity {
         if (!cell.isRevealed) {
             tv.setEnabled(true);
             tv.setAlpha(1f);
-            tv.setText(cell.isFlagged ? getString(R.string.flag) : ""); // 🚩 later (Commit 3)
             tv.setBackgroundColor(Color.LTGRAY);
+            tv.setText(cell.isFlagged ? getString(R.string.flag) : ""); // 🚩 when flagged
             return;
         }
 
+        // Revealed
         tv.setEnabled(false);
         tv.setAlpha(0.95f);
         if (cell.isMine) {
@@ -167,9 +219,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private int dp(int d) { return Math.round(getResources().getDisplayMetrics().density * d); }
+    private int dp(int d) {
+        return Math.round(getResources().getDisplayMetrics().density * d);
+    }
 
-    @Override protected void onPause() {
+    @Override
+    protected void onPause() {
         super.onPause();
         ticking = false;
         handler.removeCallbacks(tick);
