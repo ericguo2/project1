@@ -132,8 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void onCellClick(int r, int c) {
         if (awaitingResultTap) {
-            // Commit 4 will navigate to a results screen here.
-            Toast.makeText(this, "Results screen coming next.", Toast.LENGTH_SHORT).show();
+            goToResults();
             return;
         }
         if (engine.gameOver) return;
@@ -229,4 +228,13 @@ public class MainActivity extends AppCompatActivity {
         ticking = false;
         handler.removeCallbacks(tick);
     }
+
+    private void goToResults() {
+        int seconds = (int) ((System.currentTimeMillis() - startMs) / 1000L);
+        startActivity(new android.content.Intent(this, ResultActivity.class)
+                .putExtra("won", engine.won)
+                .putExtra("seconds", seconds));
+        finish();
+    }
+
 }
