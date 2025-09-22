@@ -7,10 +7,12 @@ public class GameEngine {
 
     public final Cell[][] board = new Cell[ROWS][COLS];
     public boolean gameOver = false, won = false;
-    private int revealedSafe = 0;
+    private int revealedSafe = 0;  // number of safe cells revealed
 
     public GameEngine() {
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) board[r][c] = new Cell(r, c);
+        for (int r = 0; r < ROWS; r++)
+            for (int c = 0; c < COLS; c++)
+                board[r][c] = new Cell(r, c);
         placeMines();
         computeAdjacency();
     }
@@ -27,16 +29,18 @@ public class GameEngine {
     }
 
     private void computeAdjacency() {
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) {
-            if (board[r][c].isMine) continue;
-            int count = 0;
-            for (int dr = -1; dr <= 1; dr++) for (int dc = -1; dc <= 1; dc++) {
-                if (dr == 0 && dc == 0) continue;
-                int nr = r + dr, nc = c + dc;
-                if (inBounds(nr, nc) && board[nr][nc].isMine) count++;
+        for (int r = 0; r < ROWS; r++)
+            for (int c = 0; c < COLS; c++) {
+                if (board[r][c].isMine) continue;
+                int count = 0;
+                for (int dr = -1; dr <= 1; dr++)
+                    for (int dc = -1; dc <= 1; dc++) {
+                        if (dr == 0 && dc == 0) continue;
+                        int nr = r + dr, nc = c + dc;
+                        if (inBounds(nr, nc) && board[nr][nc].isMine) count++;
+                    }
+                board[r][c].adj = count;
             }
-            board[r][c].adj = count;
-        }
     }
 
     private boolean inBounds(int r, int c) { return 0 <= r && r < ROWS && 0 <= c && c < COLS; }
@@ -67,16 +71,17 @@ public class GameEngine {
         while (!q.isEmpty()) {
             int[] cur = q.poll();
             int cr = cur[0], cc = cur[1];
-            for (int dr = -1; dr <= 1; dr++) for (int dc = -1; dc <= 1; dc++) {
-                if (dr == 0 && dc == 0) continue;
-                int nr = cr + dr, nc = cc + dc;
-                if (!inBounds(nr, nc)) continue;
-                Cell n = board[nr][nc];
-                if (n.isMine || n.isFlagged || n.isRevealed) continue;
-                n.isRevealed = true;
-                revealedSafe++;
-                if (n.adj == 0) q.add(new int[]{nr, nc});
-            }
+            for (int dr = -1; dr <= 1; dr++)
+                for (int dc = -1; dc <= 1; dc++) {
+                    if (dr == 0 && dc == 0) continue;
+                    int nr = cr + dr, nc = cc + dc;
+                    if (!inBounds(nr, nc)) continue;
+                    Cell n = board[nr][nc];
+                    if (n.isMine || n.isFlagged || n.isRevealed) continue;
+                    n.isRevealed = true;
+                    revealedSafe++;
+                    if (n.adj == 0) q.add(new int[]{nr, nc});
+                }
         }
     }
 
@@ -89,6 +94,8 @@ public class GameEngine {
     }
 
     public void revealAll() {
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) board[r][c].isRevealed = true;
+        for (int r = 0; r < ROWS; r++)
+            for (int c = 0; c < COLS; c++)
+                board[r][c].isRevealed = true;
     }
 }

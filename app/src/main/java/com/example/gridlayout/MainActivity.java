@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,22 +18,19 @@ public class MainActivity extends AppCompatActivity {
     private static final int ROWS = GameEngine.ROWS;
     private static final int COLS = GameEngine.COLS;
 
-    // UI
     private GridLayout grid;
     private TextView tvMinesLeft, tvTimer, tvModeIcon, tvMode;
 
-    // Board + state
+
     private final ArrayList<TextView> cells = new ArrayList<>();
     private GameEngine engine;
-    private boolean digMode = true;          // true = dig, false = flag
-    private int flagsPlaced = 0;             // can exceed MINES (counter may go negative)
+    private boolean digMode = true;
+    private int flagsPlaced = 0;
 
-    // Simple elapsed timer (Commit 4 can change to countdown if desired)
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long startMs = 0L;
     private boolean ticking = false;
 
-    // End-of-game extra tap gate (Commit 4 will navigate to ResultsActivity)
     private boolean awaitingResultTap = false;
 
     @Override
@@ -42,15 +38,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        grid        = findViewById(R.id.gridBoard);
+        grid = findViewById(R.id.gridBoard);
         tvMinesLeft = findViewById(R.id.tvMinesLeft);
-        tvTimer     = findViewById(R.id.tvTimer);
-        tvModeIcon  = findViewById(R.id.tvModeIcon);
-        tvMode      = findViewById(R.id.tvMode);
+        tvTimer = findViewById(R.id.tvTimer);
+        tvModeIcon = findViewById(R.id.tvModeIcon);
+        tvMode = findViewById(R.id.tvMode);
 
         tvModeIcon.setOnClickListener(v -> toggleMode());
         tvMode.setOnClickListener(v -> toggleMode());
-
         startNewGame();
     }
 
@@ -59,16 +54,14 @@ public class MainActivity extends AppCompatActivity {
         flagsPlaced = 0;
         awaitingResultTap = false;
 
-        // UI initial state
         updateMinesLeft();
-        tvModeIcon.setText(getString(R.string.pick));  // ⛏
+        tvModeIcon.setText(getString(R.string.pick));
         tvMode.setText(getString(R.string.mode_dig));
         tvTimer.setText("0");
 
         buildGrid();
         renderAll();
 
-        // Start elapsed timer
         startMs = System.currentTimeMillis();
         ticking = true;
         handler.removeCallbacks(tick);
@@ -100,12 +93,9 @@ public class MainActivity extends AppCompatActivity {
                 tv.setTextColor(Color.DKGRAY);
                 tv.setBackgroundColor(Color.LTGRAY);
 
-                // Primary click
                 tv.setOnClickListener(v -> onCellClick(rr, cc));
-                // Quick-flag via long press (optional convenience)
                 tv.setOnLongClickListener(v -> { toggleFlag(rr, cc); return true; });
 
-                // Make cells expand evenly
                 GridLayout.LayoutParams lp = new GridLayout.LayoutParams(
                         GridLayout.spec(r, 1f), GridLayout.spec(c, 1f));
                 lp.width = 0;
@@ -122,10 +112,10 @@ public class MainActivity extends AppCompatActivity {
     private void toggleMode() {
         digMode = !digMode;
         if (digMode) {
-            tvModeIcon.setText(getString(R.string.pick));  // ⛏
+            tvModeIcon.setText(getString(R.string.pick));
             tvMode.setText(getString(R.string.mode_dig));
         } else {
-            tvModeIcon.setText(getString(R.string.flag));  // 🚩
+            tvModeIcon.setText(getString(R.string.flag));
             tvMode.setText(getString(R.string.mode_flag));
         }
     }
@@ -138,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
         if (engine.gameOver) return;
 
         if (digMode) {
-            // Dig: block if flagged
             if (engine.board[r][c].isFlagged) {
                 Toast.makeText(this, "Cannot dig a flagged cell.", Toast.LENGTH_SHORT).show();
                 return;
@@ -152,13 +141,12 @@ public class MainActivity extends AppCompatActivity {
                 handler.removeCallbacks(tick);
                 engine.revealAll();
                 renderAll();
-                awaitingResultTap = true; // require one extra tap before results
+                awaitingResultTap = true;
                 Toast.makeText(this,
-                        (engine.won ? "You won!" : "You hit a mine!") + " Tap once more to continue.",
+                        (engine.won ? "You win" : "You hit a mine") + " Tap again to continue.",
                         Toast.LENGTH_SHORT).show();
             }
         } else {
-            // Flag mode uses bottom toggle
             toggleFlag(r, c);
         }
     }
@@ -181,17 +169,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateMinesLeft() {
-        // Counter can be negative per requirement
         int remaining = GameEngine.MINES - flagsPlaced;
         tvMinesLeft.setText(getString(R.string.mines_left_label) + ": " + remaining);
     }
 
     private void renderAll() {
-        for (int r = 0; r < ROWS; r++) {
-            for (int c = 0; c < COLS; c++) {
+        for (int r = 0; r < ROWS; r++)
+            for (int c = 0; c < COLS; c++)
                 renderCell(r, c);
-            }
-        }
     }
 
     private void renderCell(int r, int c) {
@@ -202,20 +187,27 @@ public class MainActivity extends AppCompatActivity {
             tv.setEnabled(true);
             tv.setAlpha(1f);
             tv.setBackgroundColor(Color.LTGRAY);
-            tv.setText(cell.isFlagged ? getString(R.string.flag) : ""); // 🚩 when flagged
+            tv.setText(cell.isFlagged ? getString(R.string.flag) : "");
             return;
         }
 
-        // Revealed
         tv.setEnabled(false);
         tv.setAlpha(0.95f);
         if (cell.isMine) {
-            tv.setText(getString(R.string.mine)); // 💣
-            tv.setBackgroundColor(Color.parseColor("#FFCDD2")); // light red
+            tv.setText(getString(R.string.mine));
+            tv.setBackgroundColor(Color.parseColor("#FFCDD2"));
         } else {
             tv.setText(cell.adj == 0 ? "" : String.valueOf(cell.adj));
             tv.setBackgroundColor(Color.WHITE);
         }
+    }
+
+    private void goToResults() {
+        int seconds = (int) ((System.currentTimeMillis() - startMs) / 1000L);
+        startActivity(new android.content.Intent(this, ResultActivity.class)
+                .putExtra("won", engine.won)
+                .putExtra("seconds", seconds));
+        finish();
     }
 
     private int dp(int d) {
@@ -228,13 +220,4 @@ public class MainActivity extends AppCompatActivity {
         ticking = false;
         handler.removeCallbacks(tick);
     }
-
-    private void goToResults() {
-        int seconds = (int) ((System.currentTimeMillis() - startMs) / 1000L);
-        startActivity(new android.content.Intent(this, ResultActivity.class)
-                .putExtra("won", engine.won)
-                .putExtra("seconds", seconds));
-        finish();
-    }
-
 }
