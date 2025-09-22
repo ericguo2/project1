@@ -1,0 +1,11 @@
+package com.example.gridlayout;
+
+public class Cell {
+    public final int r, c;
+    public boolean isMine = false;
+    public boolean isRevealed = false;
+    public boolean isFlagged = false;
+    public int adj = 0;  // adjacent mine count
+
+    public Cell(int r, int c) { this.r = r; this.c = c; }
+}
