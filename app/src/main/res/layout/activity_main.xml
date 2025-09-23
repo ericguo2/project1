@@ -7,6 +7,41 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/appHeader"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="?attr/colorPrimary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvHeaderLeft"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/header_left"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:textSize="25sp"
+            android:layout_marginStart="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView
+            android:id="@+id/tvHeaderRight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/header_right"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:textSize="25sp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
@@ -14,7 +49,7 @@
         android:orientation="horizontal"
         android:paddingHorizontal="12dp"
         android:paddingTop="12dp"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/appHeader"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -23,17 +58,19 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Mines: 5"
-            android:textSize="16sp" />
+            android:paddingLeft="120dp"
+            tools:text="🚩 5"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/tvTimer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:paddingRight="120dp"
             android:gravity="end"
-            android:text="0"
-            android:textSize="16sp" />
+            tools:text="🕓 0"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <androidx.gridlayout.widget.GridLayout
