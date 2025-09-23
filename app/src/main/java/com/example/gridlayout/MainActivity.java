@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long startMs = 0L;
     private boolean ticking = false;
+    private Integer endSeconds = null;
     private boolean awaitingResultTap = false;
 
     @Override
@@ -58,9 +59,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void startNewGame(){
         engine = new GameEngine();
-
-        flagsPlaced = 0;
         awaitingResultTap = false;
+        flagsPlaced = 0;
+        endSeconds = null;
         updateMinesLeft();
 
         tvModeIcon.setText(getString(R.string.pick));
@@ -149,8 +150,10 @@ public class MainActivity extends AppCompatActivity {
                 renderAll();
             }
             if(engine.gameOver){
+                endSeconds = (int)((System.currentTimeMillis() - startMs) / 1000L);
                 ticking = false;
                 handler.removeCallbacks(tick);
+                tvTimer.setText(getString(R.string.clock) + " " + endSeconds);
                 engine.revealAll();
                 renderAll();
                 awaitingResultTap = true;
@@ -234,7 +237,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void goToResults(){
-        int seconds = (int)((System.currentTimeMillis() - startMs) / 1000L);
+        int seconds = 0;
+        if(endSeconds != null){
+            seconds = endSeconds;
+        }else{
+            seconds = (int)((System.currentTimeMillis() - startMs) / 1000L);
+        }
         startActivity(new android.content.Intent(this, ResultActivity.class)
                 .putExtra("won", engine.won)
                 .putExtra("seconds", seconds));
